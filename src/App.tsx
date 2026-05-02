@@ -97,9 +97,11 @@ export default function App() {
             venda as receitas mais amadas de Minas Gerais por encomenda.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 px-4">
-            <ClayButton size="lg" className="w-full sm:w-auto gap-2 group bg-linear-to-br from-emerald-400 to-emerald-600 px-8 h-14 sm:h-16">
-              Quero minha renda extra <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </ClayButton>
+            <a href="https://payfast.greenn.com.br/171982/offer/FpS9c3" className="w-full sm:w-auto">
+              <ClayButton size="lg" className="w-full gap-2 group bg-linear-to-br from-emerald-400 to-emerald-600 px-8 h-14 sm:h-16">
+                Quero minha renda extra <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </ClayButton>
+            </a>
             <div className="flex items-center gap-2 text-clay-muted font-bold text-[10px] sm:text-sm bg-white/40 px-4 py-2 rounded-full backdrop-blur-sm shadow-sm">
               <Check className="text-clay-success" size={14} /> Acesso Imediato
             </div>
@@ -394,9 +396,11 @@ export default function App() {
             ))}
           </div>
 
-          <ClayButton size="lg" className="w-full h-16 sm:h-20 text-lg sm:text-2xl shadow-xl shadow-emerald-500/30 bg-linear-to-br from-emerald-400 to-emerald-600">
-            Quero Todos os Bônus →
-          </ClayButton>
+          <a href="https://payfast.greenn.com.br/171982/offer/FpS9c3">
+            <ClayButton size="lg" className="w-full h-16 sm:h-20 text-lg sm:text-2xl shadow-xl shadow-emerald-500/30 bg-linear-to-br from-emerald-400 to-emerald-600">
+              Quero Todos os Bônus →
+            </ClayButton>
+          </a>
           
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-clay-muted text-[8px] sm:text-[10px] font-black uppercase tracking-widest bg-white/50 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl">
             <span>Pix · Cartão</span>
