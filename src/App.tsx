@@ -16,9 +16,10 @@ import {
   Zap,
   Ticket,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  VolumeX
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ClayButton } from "./components/ClayButton";
 import { ClayCard } from "./components/ClayCard";
@@ -52,17 +53,37 @@ export default function App() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
-  const togglePlay = () => {
+  const handleVideoClick = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
+      if (isMuted) {
+        // First click: Unmute, restart from begining and ensure it's playing
+        videoRef.current.muted = false;
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(err => console.error("Playback failed:", err));
+        setIsMuted(false);
+        setIsPlaying(true);
       } else {
-        videoRef.current.play();
+        // Subsequent clicks: Standard play/pause toggle
+        if (isPlaying) {
+          videoRef.current.pause();
+        } else {
+          videoRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
       }
-      setIsPlaying(!isPlaying);
     }
   };
+
+  // Attempt to play on mount (for mobile/tablet browsers that allow muted autoplay)
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => {
+        console.log("Autoplay prevented:", err);
+      });
+    }
+  }, []);
 
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
@@ -283,20 +304,38 @@ export default function App() {
         <div className="flex justify-center mb-10 sm:mb-16 px-2 sm:px-4">
           <div 
             className="relative cursor-pointer group/video max-w-fit mx-auto"
-            onClick={togglePlay}
+            onClick={handleVideoClick}
           >
+            {/* Audio Warning Overlay */}
+            <AnimatePresence>
+              {isMuted && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute top-4 left-4 right-4 z-10 pointer-events-none"
+                >
+                  <div className="bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 animate-bounce mx-auto w-fit shadow-lg border border-white/20">
+                    <VolumeX size={14} className="animate-pulse" /> Clique para assistir com áudio
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <video 
               ref={videoRef}
               src="https://www.dropbox.com/scl/fi/fxdx084lty3lzy0j8v1b3/0429.mp4?rlkey=gagotnki335btek96f2h2vrnr&st=obqmnb9w&raw=1" 
               loop
               playsInline
+              autoPlay
+              muted={isMuted}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              className="rounded-[18px] sm:rounded-[24px] h-[380px] sm:h-[800px] lg:h-[850px] w-auto block shadow-2xl"
+              className="rounded-[18px] sm:rounded-[24px] h-[380px] sm:h-[800px] lg:h-[850px] w-auto block shadow-2xl transition-all duration-700"
             />
             
             {/* Play/Pause Overlay */}
-            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
+            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying && !isMuted ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
               <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-clay-accent/30 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-clay-button transform group-hover/video:scale-110 transition-transform">
                 {isPlaying ? (
                   <div className="flex gap-1 sm:gap-1.5">
