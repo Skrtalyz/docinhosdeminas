@@ -1,11 +1,15 @@
 import { motion, HTMLMotionProps } from "motion/react";
 import { ReactNode } from "react";
 
-interface ClayButtonProps extends HTMLMotionProps<"button"> {
+interface ClayButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   size?: "sm" | "default" | "lg";
   className?: string;
+  href?: string;
+  id?: string;
+  target?: string;
+  rel?: string;
 }
 
 export const ClayButton = ({
@@ -13,6 +17,10 @@ export const ClayButton = ({
   variant = "primary",
   size = "default",
   className = "",
+  href,
+  id,
+  target,
+  rel,
   ...props
 }: ClayButtonProps) => {
   const sizeClasses = {
@@ -28,19 +36,41 @@ export const ClayButton = ({
     ghost: "text-clay-foreground hover:bg-emerald-50 hover:text-emerald-600",
   };
 
+  const commonClasses = `
+    inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 cursor-pointer
+    ${sizeClasses[size]}
+    ${variantClasses[variant]}
+    ${variant === 'primary' ? 'active:shadow-clay-pressed' : ''}
+    ${className}
+  `;
+
+  const commonProps = {
+    className: commonClasses,
+    style: { fontFamily: "Nunito, sans-serif" },
+    id: id,
+    ...(props as any)
+  };
+
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        target={target}
+        rel={rel}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.92 }}
+        {...commonProps}
+      >
+        {children}
+      </motion.a>
+    );
+  }
+
   return (
     <motion.button
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.92 }}
-      className={`
-        inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 cursor-pointer
-        ${sizeClasses[size]}
-        ${variantClasses[variant]}
-        ${variant === 'primary' ? 'active:shadow-clay-pressed' : ''}
-        ${className}
-      `}
-      style={{ fontFamily: "Nunito, sans-serif" }}
-      {...props}
+      {...commonProps}
     >
       {children}
     </motion.button>
