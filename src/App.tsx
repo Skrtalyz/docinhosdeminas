@@ -120,7 +120,7 @@ export default function App() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 px-4">
             <ClayButton 
               id="cta-hero"
-              href="https://payfast.greenn.com.br/171982/offer/FpS9c3"
+              href="https://payfast.greenn.com.br/redirect/283109"
               size="lg" 
               className="w-full sm:w-auto gap-2 group bg-linear-to-br from-emerald-400 to-emerald-600 px-8 h-14 sm:h-16"
             >
@@ -440,7 +440,7 @@ export default function App() {
 
           <ClayButton 
             id="cta-pricing"
-            href="https://payfast.greenn.com.br/171982/offer/FpS9c3"
+            href="https://payfast.greenn.com.br/redirect/283109"
             size="lg" 
             className="w-full h-16 sm:h-20 text-lg sm:text-2xl shadow-xl shadow-emerald-500/30 bg-linear-to-br from-emerald-400 to-emerald-600"
           >
