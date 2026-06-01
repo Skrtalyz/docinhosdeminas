@@ -25,16 +25,9 @@ export const ClayButton = ({
 }: ClayButtonProps) => {
   const [finalHref, setFinalHref] = useState(href);
 
-  useEffect(() => {
+  const updateHrefWithParams = React.useCallback(() => {
     if (!href) return;
     try {
-      const search = window.location.search;
-      if (!search) {
-        setFinalHref(href);
-        return;
-      }
-
-      const windowParams = new URLSearchParams(search);
       let url: URL;
       try {
         url = new URL(href);
@@ -42,21 +35,127 @@ export const ClayButton = ({
         url = new URL(href, window.location.origin);
       }
 
-      // Merge current URL search params into the target href URL
-      windowParams.forEach((value, key) => {
-        url.searchParams.set(key, value);
+      const mergedParams = new URLSearchParams();
+
+      // 1. Get from current URL search params
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.forEach((value, key) => {
+        if (value) mergedParams.set(key, value);
       });
 
-      if (href.startsWith("http://") || href.startsWith("https://")) {
-        setFinalHref(url.toString());
-      } else {
-        setFinalHref(url.pathname + url.search + url.hash);
+      // 2. Scan localStorage
+      try {
+        const trackingKeys = [
+          "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id",
+          "xcod", "src", "sck", "subid", "fbclid", "gclid", "ttclid", "pixelId"
+        ];
+        
+        trackingKeys.forEach(key => {
+          const val = localStorage.getItem(key);
+          if (val) mergedParams.set(key, val);
+        });
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes("utm") || lowerKey.startsWith("utmify") || lowerKey === "xcod" || lowerKey === "pixelid" || lowerKey === "sck" || lowerKey === "src" || lowerKey === "subid") {
+              const val = localStorage.getItem(key);
+              if (val && typeof val === "string" && val.length < 500) {
+                mergedParams.set(key, val);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Local storage lookup failed:", e);
       }
+
+      // 3. Scan sessionStorage
+      try {
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key) {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes("utm") || lowerKey.startsWith("utmify") || lowerKey === "xcod" || lowerKey === "pixelid" || lowerKey === "sck" || lowerKey === "src" || lowerKey === "subid") {
+              const val = sessionStorage.getItem(key);
+              if (val && typeof val === "string" && val.length < 500) {
+                mergedParams.set(key, val);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Session storage lookup failed:", e);
+      }
+
+      // 4. Scan cookies
+      try {
+        const cookies = document.cookie.split(";");
+        cookies.forEach(cookie => {
+          const parts = cookie.split("=");
+          if (parts.length >= 2) {
+            const key = parts[0].trim();
+            const rawValue = parts.slice(1).join("=");
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes("utm") || lowerKey.startsWith("utmify") || lowerKey === "xcod" || lowerKey === "pixelid" || lowerKey === "sck" || lowerKey === "src" || lowerKey === "subid") {
+              try {
+                const val = decodeURIComponent(rawValue.trim());
+                if (val && val.length < 500) {
+                  mergedParams.set(key, val);
+                }
+              } catch {
+                mergedParams.set(key, rawValue.trim());
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Cookies lookup failed:", e);
+      }
+
+      // Apply all merged parameters back to the URL
+      mergedParams.forEach((value, key) => {
+        if (value) {
+          url.searchParams.set(key, value);
+        }
+      });
+
+      let updatedHref: string;
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        updatedHref = url.toString();
+      } else {
+        updatedHref = url.pathname + url.search + url.hash;
+      }
+
+      setFinalHref(updatedHref);
     } catch (e) {
       console.error("Error merging URL params:", e);
       setFinalHref(href);
     }
   }, [href]);
+
+  useEffect(() => {
+    if (!href) return;
+    
+    // Initial sync
+    updateHrefWithParams();
+
+    // Early poll to capture early UTMify init (500ms)
+    const t1 = setTimeout(updateHrefWithParams, 500);
+    
+    // Defer poll to capture standard UTMify loads (1500ms)
+    const t2 = setTimeout(updateHrefWithParams, 1500);
+
+    // Full backstop safe poll (3500ms)
+    const t3 = setTimeout(updateHrefWithParams, 3500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [href, updateHrefWithParams]);
 
   const sizeClasses = {
     sm: "h-11 px-6 rounded-[16px] text-sm",
@@ -94,6 +193,24 @@ export const ClayButton = ({
         rel={rel}
         whileHover={{ y: -4 }}
         whileTap={{ scale: 0.92 }}
+        onMouseEnter={(e) => {
+          updateHrefWithParams();
+          if ((props as any).onMouseEnter) (props as any).onMouseEnter(e);
+        }}
+        onFocus={(e) => {
+          updateHrefWithParams();
+          if ((props as any).onFocus) (props as any).onFocus(e);
+        }}
+        onTouchStart={(e) => {
+          updateHrefWithParams();
+          if ((props as any).onTouchStart) (props as any).onTouchStart(e);
+        }}
+        onClick={(e) => {
+          updateHrefWithParams();
+          if ((props as any).onClick) {
+            (props as any).onClick(e as any);
+          }
+        }}
         {...commonProps}
       >
         {children}
