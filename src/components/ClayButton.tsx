@@ -1,7 +1,7 @@
 import { motion, HTMLMotionProps } from "motion/react";
-import { ReactNode } from "react";
+import React, { ReactNode, useState, useEffect, ButtonHTMLAttributes } from "react";
 
-interface ClayButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ClayButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   size?: "sm" | "default" | "lg";
@@ -23,6 +23,41 @@ export const ClayButton = ({
   rel,
   ...props
 }: ClayButtonProps) => {
+  const [finalHref, setFinalHref] = useState(href);
+
+  useEffect(() => {
+    if (!href) return;
+    try {
+      const search = window.location.search;
+      if (!search) {
+        setFinalHref(href);
+        return;
+      }
+
+      const windowParams = new URLSearchParams(search);
+      let url: URL;
+      try {
+        url = new URL(href);
+      } catch {
+        url = new URL(href, window.location.origin);
+      }
+
+      // Merge current URL search params into the target href URL
+      windowParams.forEach((value, key) => {
+        url.searchParams.set(key, value);
+      });
+
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        setFinalHref(url.toString());
+      } else {
+        setFinalHref(url.pathname + url.search + url.hash);
+      }
+    } catch (e) {
+      console.error("Error merging URL params:", e);
+      setFinalHref(href);
+    }
+  }, [href]);
+
   const sizeClasses = {
     sm: "h-11 px-6 rounded-[16px] text-sm",
     default: "h-14 px-8 rounded-[20px] text-base",
@@ -54,7 +89,7 @@ export const ClayButton = ({
   if (href) {
     return (
       <motion.a
-        href={href}
+        href={finalHref}
         target={target}
         rel={rel}
         whileHover={{ y: -4 }}
