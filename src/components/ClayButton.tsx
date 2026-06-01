@@ -23,9 +23,7 @@ export const ClayButton = ({
   rel,
   ...props
 }: ClayButtonProps) => {
-  const [finalHref, setFinalHref] = useState(href);
-
-  const getCalculatedHref = React.useCallback((): string => {
+  const getCalculatedHref = (): string => {
     if (!href) return "";
     try {
       let url: URL;
@@ -130,34 +128,9 @@ export const ClayButton = ({
       console.error("Error creating calculated href:", e);
       return href;
     }
-  }, [href]);
+  };
 
-  const updateHrefWithParams = React.useCallback(() => {
-    if (!href) return;
-    setFinalHref(getCalculatedHref());
-  }, [href, getCalculatedHref]);
-
-  useEffect(() => {
-    if (!href) return;
-    
-    // Initial sync
-    updateHrefWithParams();
-
-    // Early poll to capture early UTMify init (500ms)
-    const t1 = setTimeout(updateHrefWithParams, 500);
-    
-    // Defer poll to capture standard UTMify loads (1500ms)
-    const t2 = setTimeout(updateHrefWithParams, 1500);
-
-    // Full backstop safe poll (3500ms)
-    const t3 = setTimeout(updateHrefWithParams, 3500);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, [href, updateHrefWithParams]);
+  const calculatedHref = getCalculatedHref();
 
   const sizeClasses = {
     sm: "h-11 px-6 rounded-[16px] text-sm",
@@ -190,38 +163,18 @@ export const ClayButton = ({
   if (href) {
     return (
       <motion.a
-        href={finalHref}
+        href={calculatedHref}
         target={target}
         rel={rel}
         whileHover={{ y: -4 }}
         whileTap={{ scale: 0.92 }}
-        onMouseEnter={(e) => {
-          updateHrefWithParams();
-          if ((props as any).onMouseEnter) (props as any).onMouseEnter(e);
-        }}
-        onFocus={(e) => {
-          updateHrefWithParams();
-          if ((props as any).onFocus) (props as any).onFocus(e);
-        }}
-        onTouchStart={(e) => {
-          updateHrefWithParams();
-          if ((props as any).onTouchStart) (props as any).onTouchStart(e);
-        }}
         onClick={(e) => {
-          const targetUrl = getCalculatedHref();
-          
           if ((props as any).onClick) {
             (props as any).onClick(e as any);
           }
-          
-          if (!e.defaultPrevented) {
-            e.preventDefault();
-            if (target === "_blank") {
-              window.open(targetUrl, "_blank", "noopener,noreferrer");
-            } else {
-              window.location.href = targetUrl;
-            }
-          }
+          // Do NOT call e.preventDefault(). This ensures native HTML link navigation
+          // continues normally, allowing UTMify's tracking script to successfully capture
+          // standard click events and register clicks on the UTMify dashboard metric.
         }}
         {...commonProps}
       >
