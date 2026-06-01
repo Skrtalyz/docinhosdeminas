@@ -25,8 +25,8 @@ export const ClayButton = ({
 }: ClayButtonProps) => {
   const [finalHref, setFinalHref] = useState(href);
 
-  const updateHrefWithParams = React.useCallback(() => {
-    if (!href) return;
+  const getCalculatedHref = React.useCallback((): string => {
+    if (!href) return "";
     try {
       let url: URL;
       try {
@@ -43,7 +43,7 @@ export const ClayButton = ({
         if (value) mergedParams.set(key, value);
       });
 
-      // 2. Scan localStorage
+      // 2. Scan localStorage for UTM parameters, UTMify values, and custom tracking fields
       try {
         const trackingKeys = [
           "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id",
@@ -68,7 +68,7 @@ export const ClayButton = ({
           }
         }
       } catch (e) {
-        console.error("Local storage lookup failed:", e);
+        // Safe fallback
       }
 
       // 3. Scan sessionStorage
@@ -86,7 +86,7 @@ export const ClayButton = ({
           }
         }
       } catch (e) {
-        console.error("Session storage lookup failed:", e);
+        // Safe fallback
       }
 
       // 4. Scan cookies
@@ -111,7 +111,7 @@ export const ClayButton = ({
           }
         });
       } catch (e) {
-        console.error("Cookies lookup failed:", e);
+        // Safe fallback
       }
 
       // Apply all merged parameters back to the URL
@@ -121,19 +121,21 @@ export const ClayButton = ({
         }
       });
 
-      let updatedHref: string;
       if (href.startsWith("http://") || href.startsWith("https://")) {
-        updatedHref = url.toString();
+        return url.toString();
       } else {
-        updatedHref = url.pathname + url.search + url.hash;
+        return url.pathname + url.search + url.hash;
       }
-
-      setFinalHref(updatedHref);
     } catch (e) {
-      console.error("Error merging URL params:", e);
-      setFinalHref(href);
+      console.error("Error creating calculated href:", e);
+      return href;
     }
   }, [href]);
+
+  const updateHrefWithParams = React.useCallback(() => {
+    if (!href) return;
+    setFinalHref(getCalculatedHref());
+  }, [href, getCalculatedHref]);
 
   useEffect(() => {
     if (!href) return;
@@ -206,9 +208,19 @@ export const ClayButton = ({
           if ((props as any).onTouchStart) (props as any).onTouchStart(e);
         }}
         onClick={(e) => {
-          updateHrefWithParams();
+          const targetUrl = getCalculatedHref();
+          
           if ((props as any).onClick) {
             (props as any).onClick(e as any);
+          }
+          
+          if (!e.defaultPrevented) {
+            e.preventDefault();
+            if (target === "_blank") {
+              window.open(targetUrl, "_blank", "noopener,noreferrer");
+            } else {
+              window.location.href = targetUrl;
+            }
           }
         }}
         {...commonProps}
