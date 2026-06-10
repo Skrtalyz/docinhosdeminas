@@ -23,6 +23,8 @@ export const ClayButton = ({
   rel,
   ...props
 }: ClayButtonProps) => {
+  const anchorRef = React.useRef<HTMLAnchorElement>(null);
+
   const getCalculatedHref = (): string => {
     if (!href) return "";
     try {
@@ -132,6 +134,52 @@ export const ClayButton = ({
 
   const calculatedHref = getCalculatedHref();
 
+  useEffect(() => {
+    const element = anchorRef.current;
+    if (!element || !href) return;
+
+    const handleVanillaClick = (e: MouseEvent) => {
+      // 1. Run standard click handlers if provided
+      if ((props as any).onClick) {
+        (props as any).onClick(e);
+      }
+
+      // 2. Compute dynamic href with latest UTM tags at the exact millisecond of click
+      const targetUrl = getCalculatedHref();
+
+      // 3. Prevent standard navigation to prevent browser hangs or event blockages
+      e.preventDefault();
+
+      // 4. Force top / safe redirection
+      const inIframe = typeof window !== "undefined" && window.self !== window.top;
+      const isExternal = targetUrl.startsWith("http://") || targetUrl.startsWith("https://");
+      const computedTarget = target || (isExternal ? (inIframe ? "_top" : "_self") : undefined);
+
+      if (computedTarget === "_blank") {
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+      } else if (computedTarget === "_top") {
+        try {
+          if (window.top) {
+            window.top.location.href = targetUrl;
+          } else {
+            window.location.href = targetUrl;
+          }
+        } catch {
+          window.location.href = targetUrl;
+        }
+      } else {
+        window.location.href = targetUrl;
+      }
+    };
+
+    // Use capturing phase = false for standard bubble sequence to let tracking tools capture click metrics
+    element.addEventListener("click", handleVanillaClick, false);
+
+    return () => {
+      element.removeEventListener("click", handleVanillaClick, false);
+    };
+  }, [href, target, props]);
+
   const sizeClasses = {
     sm: "h-11 px-6 rounded-[16px] text-sm",
     default: "h-14 px-8 rounded-[20px] text-base",
@@ -168,19 +216,12 @@ export const ClayButton = ({
   if (href) {
     return (
       <motion.a
+        ref={anchorRef}
         href={calculatedHref}
         target={finalTarget}
         rel={finalRel}
         whileHover={{ y: -4 }}
         whileTap={{ scale: 0.92 }}
-        onClick={(e) => {
-          if ((props as any).onClick) {
-            (props as any).onClick(e as any);
-          }
-          // Do NOT call e.preventDefault(). This ensures native HTML link navigation
-          // continues normally, allowing UTMify's tracking script to successfully capture
-          // standard click events and register clicks on the UTMify dashboard metric.
-        }}
         {...commonProps}
       >
         {children}
