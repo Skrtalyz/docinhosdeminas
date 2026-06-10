@@ -160,8 +160,9 @@ export const ClayButton = ({
     ...(props as any)
   };
 
+  const inIframe = typeof window !== "undefined" && window.self !== window.top;
   const isExternal = href && (href.startsWith("http://") || href.startsWith("https://"));
-  const finalTarget = target || (isExternal ? "_blank" : undefined);
+  const finalTarget = target || (isExternal ? (inIframe ? "_top" : "_self") : undefined);
   const finalRel = rel || (finalTarget === "_blank" ? "noopener noreferrer" : undefined);
 
   if (href) {
