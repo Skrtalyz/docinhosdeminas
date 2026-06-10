@@ -160,12 +160,16 @@ export const ClayButton = ({
     ...(props as any)
   };
 
+  const isExternal = href && (href.startsWith("http://") || href.startsWith("https://"));
+  const finalTarget = target || (isExternal ? "_blank" : undefined);
+  const finalRel = rel || (finalTarget === "_blank" ? "noopener noreferrer" : undefined);
+
   if (href) {
     return (
       <motion.a
         href={calculatedHref}
-        target={target}
-        rel={rel}
+        target={finalTarget}
+        rel={finalRel}
         whileHover={{ y: -4 }}
         whileTap={{ scale: 0.92 }}
         onClick={(e) => {
